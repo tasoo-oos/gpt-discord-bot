@@ -1,3 +1,5 @@
+This repository is a fork of the original [OpenAI Discord Chatbot](https://github.com/openai/gpt-discord-bot)
+
 # Please read!
 
 
