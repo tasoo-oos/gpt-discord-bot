@@ -92,7 +92,7 @@ async def chat_command(
     int: discord.Interaction,
     message: str,
     model: AVAILABLE_MODELS = DEFAULT_MODEL,
-    temperature: Optional[float] = 0.7,
+    temperature: Optional[float] = 0.8,
     max_tokens: Optional[int] = max_tokens_limit,
 ):
     try:
