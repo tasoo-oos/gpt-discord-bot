@@ -3,4 +3,7 @@ env
 __pycache__/
 */.DS_Store
 .DS_Store
-
+thread_data.pkl
+.idea
+.gitignore
+TODO.md

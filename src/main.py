@@ -1,3 +1,4 @@
+import pickle
 from collections import defaultdict
 from typing import Literal, Optional, Union
 
@@ -40,7 +41,20 @@ intents.message_content = True
 
 client = discord.Client(intents=intents)
 tree = discord.app_commands.CommandTree(client)
+
+thread_data_dir = "thread_data.pkl"
 thread_data = defaultdict()
+
+max_tokens_limit = 2048
+
+try:
+    with open(thread_data_dir, "rb") as f:
+        thread_data = pickle.load(f)
+except Exception as e:
+    logger.info(f"Failed to load thread data: {str(e)}, start with empty data.")
+    pass
+else:
+    logger.info(f"Loaded thread data successfully: {thread_data}")
 
 
 @client.event
@@ -51,7 +65,7 @@ async def on_ready():
     for c in EXAMPLE_CONVOS:
         messages = []
         for m in c.messages:
-            if m.user == "Lenard":
+            if m.user == "GPT":
                 messages.append(Message(user=client.user.name, text=m.text))
             else:
                 messages.append(m)
@@ -78,8 +92,8 @@ async def chat_command(
     int: discord.Interaction,
     message: str,
     model: AVAILABLE_MODELS = DEFAULT_MODEL,
-    temperature: Optional[float] = 1.0,
-    max_tokens: Optional[int] = 512,
+    temperature: Optional[float] = 0.7,
+    max_tokens: Optional[int] = max_tokens_limit,
 ):
     try:
         # only support creating thread in text channel
@@ -102,9 +116,9 @@ async def chat_command(
             return
 
         # Check for valid max_tokens
-        if max_tokens is not None and (max_tokens < 1 or max_tokens > 4096):
+        if max_tokens is not None and (max_tokens < 1 or max_tokens > max_tokens_limit):
             await int.response.send_message(
-                f"You supplied an invalid max_tokens: {max_tokens}. Max tokens must be between 1 and 4096.",
+                f"You supplied an invalid max_tokens: {max_tokens}. Max tokens must be between 1 and {max_tokens_limit}.",
                 ephemeral=True,
             )
             return
@@ -167,6 +181,11 @@ async def chat_command(
         thread_data[thread.id] = ThreadConfig(
             model=model, max_tokens=max_tokens, temperature=temperature
         )
+
+        with open(thread_data_dir, "wb") as pkl_file:
+            pickle.dump(thread_data, pkl_file)
+        logger.info(f"Created thread {thread.name} {thread.id} {thread.jump_url}")
+
         async with thread.typing():
             # fetch completion
             messages = [Message(user=user.name, text=message)]
@@ -305,6 +324,7 @@ async def on_message(message: DiscordMessage):
         await process_response(
             user=message.author, thread=thread, response_data=response_data
         )
+
     except Exception as e:
         logger.exception(e)
 
